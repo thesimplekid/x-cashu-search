@@ -1,0 +1,5 @@
+pubkey = ""
+trusted_mints = []
+sats_per_search = 45
+auth_token = ""
+relays = []
