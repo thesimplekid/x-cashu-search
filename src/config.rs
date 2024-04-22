@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use cashu_sdk::url::UncheckedUrl;
-use cashu_sdk::Amount;
+use cdk::url::UncheckedUrl;
+use cdk::Amount;
 use config::{Config, ConfigError, File};
 use nostr_sdk::Url;
 use serde::{Deserialize, Serialize};

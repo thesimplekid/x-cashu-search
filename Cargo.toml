@@ -7,8 +7,10 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.7.5", features = ["macros"] }
-# cashu-sdk = { git = "https://github.com/thesimplekid/cashu-crab", rev = "34908cf", default-features = false, features = ["wallet", "all-nuts", "redb"] }
-cashu-sdk = { path = "../../cashu-crab/main/crates/cashu-sdk", default-features = false, features = ["wallet", "all-nuts", "redb"] }
+cdk = { git = "https://github.com/cashubtc/cdk", rev = "e4adb1c", default-features = false, features = ["wallet", "all-nuts", "redb"] }
+cdk-redb = { git = "https://github.com/cashubtc/cdk", rev = "e4adb1c", default-features = false, features = ["wallet"] }
+# cdk-redb = { path = "../cashu-crab/database/crates/cdk-redb" }
+# cashu-sdk = { path = "../../cashu-crab/main/rexie_db/cashu-sdk", default-features = false, features = ["wallet", "all-nuts", "redb"] }
 minreq = { version = "2.11.1", features = ["json-using-serde", "https"] }
 nostr-sdk = "0.29.0"
 serde = { version = "1.0.197", features = ["derive"] }

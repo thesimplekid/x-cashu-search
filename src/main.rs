@@ -8,12 +8,12 @@ use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::get;
 use axum::{debug_handler, Json, Router};
-use cashu_sdk::client::{self};
-use cashu_sdk::nuts::{P2PKConditions, Token};
-use cashu_sdk::url::UncheckedUrl;
-use cashu_sdk::wallet::localstore::{self};
-use cashu_sdk::wallet::Wallet;
-use cashu_sdk::Amount;
+use cdk::client::{self};
+use cdk::nuts::{P2PKConditions, Token};
+use cdk::url::UncheckedUrl;
+use cdk::wallet::Wallet;
+use cdk::Amount;
+use cdk_redb::RedbWalletDatabase;
 use nostr_sdk::{Client, Keys, PublicKey, Url};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
@@ -46,13 +46,13 @@ async fn main() {
 
     let spending_conditions = P2PKConditions {
         locktime: None,
-        pubkeys: vec![cashu_sdk::nuts::PublicKey::from_str(&settings.pubkey)
+        pubkeys: vec![cdk::nuts::PublicKey::from_str(&settings.pubkey)
             .unwrap()
             .try_into()
             .unwrap()],
         refund_keys: None,
         num_sigs: None,
-        sig_flag: cashu_sdk::nuts::SigFlag::default(),
+        sig_flag: cdk::nuts::SigFlag::default(),
     };
 
     let info = Info {
@@ -67,11 +67,11 @@ async fn main() {
         auth_token: settings.auth_token,
     };
 
-    let client = client::minreq_client::HttpClient {};
+    let client = client::HttpClient::default();
 
-    let localstore = localstore::MemoryLocalStore::default();
+    let localstore = RedbWalletDatabase::new("./redb").unwrap();
 
-    let wallet = Wallet::new(Arc::new(client), Arc::new(localstore), None).await;
+    let wallet = Wallet::new(client, Arc::new(localstore), None).await;
 
     // TODO: get gets for trusted mints
     let my_keys = Keys::generate();
