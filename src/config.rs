@@ -9,9 +9,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Settings {
     pub pubkey: String,
+    pub mnemonic: String,
     pub trusted_mints: HashSet<UncheckedUrl>,
     pub sats_per_search: Amount,
-    pub auth_token: String,
+    pub kagi_auth_token: String,
+    pub brave_auth_token: String,
     pub relays: HashSet<Url>,
 }
 

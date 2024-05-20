@@ -1,5 +1,5 @@
 [package]
-name = "main"
+name = "cashu_search"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,10 +7,10 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.7.5", features = ["macros"] }
-cdk = { git = "https://github.com/cashubtc/cdk", rev = "e4adb1c", default-features = false, features = ["wallet", "all-nuts", "redb"] }
-cdk-redb = { git = "https://github.com/cashubtc/cdk", rev = "e4adb1c", default-features = false, features = ["wallet"] }
-# cdk-redb = { path = "../cashu-crab/database/crates/cdk-redb" }
-# cashu-sdk = { path = "../../cashu-crab/main/rexie_db/cashu-sdk", default-features = false, features = ["wallet", "all-nuts", "redb"] }
+cdk = { git = "https://github.com/thesimplekid/cdk", branch = "nostr", default-features = false, features = ["wallet", "nostr"] }
+cdk-redb = { git = "https://github.com/thesimplekid/cdk", branch = "nostr", default-features = false, features = ["wallet", "nostr"] }
+#cdk-redb = { path = "../../cdk/nostr/crates/cdk-redb", features = ["nostr"] }
+#cdk = { path = "../../cdk/nostr/crates/cdk", default-features = false, features = ["wallet", "nostr"] }
 minreq = { version = "2.11.1", features = ["json-using-serde", "https"] }
 nostr-sdk = "0.29.0"
 serde = { version = "1.0.197", features = ["derive"] }
@@ -20,6 +20,7 @@ config = { version = "0.13.3", features = ["toml"] }
 dirs = "5.0.1"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
+tower-http = { version = "0.5.2", features = ["cors"] }
 
 [profile]
 
