@@ -7,11 +7,11 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.7.5", features = ["macros"] }
-cdk = { git = "https://github.com/thesimplekid/cdk", branch = "nostr", default-features = false, features = ["wallet", "nostr"] }
-cdk-redb = { git = "https://github.com/thesimplekid/cdk", branch = "nostr", default-features = false, features = ["wallet", "nostr"] }
+cdk = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet", "nostr"] }
+cdk-redb = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet", "nostr"] }
 #cdk-redb = { path = "../../cdk/nostr/crates/cdk-redb", features = ["nostr"] }
 #cdk = { path = "../../cdk/nostr/crates/cdk", default-features = false, features = ["wallet", "nostr"] }
-minreq = { version = "2.11.1", features = ["json-using-serde", "https"] }
+minreq = { version = "2.11.1", features = ["json-using-serde", "https", "urlencoding"] }
 nostr-sdk = "0.29.0"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"

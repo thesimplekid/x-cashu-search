@@ -52,7 +52,7 @@ async fn main() {
     println!("listening on {}", listener.local_addr().unwrap());
 
     // get config file name from args
-    let config_file_arg = "/etc/x_cashu_search/config.toml".to_string();
+    let config_file_arg = "./config.toml".to_string();
 
     let settings = config::Settings::new(&Some(config_file_arg));
 
@@ -217,6 +217,7 @@ struct Params {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Info {
     trusted_mints: HashSet<UncheckedUrl>,
+    #[serde(flatten)]
     acceptable_p2pk_conditions: SpendingConditions,
     sats_per_search: Amount,
     pubkey: PublicKey,
