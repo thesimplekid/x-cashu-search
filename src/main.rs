@@ -16,7 +16,7 @@ use cdk::url::UncheckedUrl;
 use cdk::util::unix_time;
 use cdk::wallet::Wallet;
 use cdk::{Amount, Mnemonic};
-use cdk_redb::RedbWalletDatabase;
+use cdk_sqlite::WalletSQLiteDatabase;
 use nostr_sdk::{Client, Keys, PublicKey, Url};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -46,7 +46,7 @@ async fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
         .await
         .unwrap();
     println!("listening on {}", listener.local_addr().unwrap());
@@ -76,9 +76,9 @@ async fn main() {
         brave_auth_token: settings.brave_auth_token,
     };
 
-    let localstore = RedbWalletDatabase::new("./redb").unwrap();
+    let localstore = WalletSQLiteDatabase::new("./wallet.sqlite").await.unwrap();
 
-    let wallet = Wallet::new(Arc::new(localstore), &seed);
+    let wallet = Wallet::new(Arc::new(localstore), &seed, vec![]);
 
     let my_keys = Keys::generate();
     let client = Client::new(my_keys);
@@ -184,6 +184,8 @@ async fn get_search(
         .json::<Value>()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    tracing::info!("{}", json_response);
+
     let results: KagiSearchResponse =
         serde_json::from_value(json_response).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     tracing::info!(
@@ -220,6 +222,7 @@ struct Info {
     #[serde(flatten)]
     acceptable_p2pk_conditions: SpendingConditions,
     sats_per_search: Amount,
+    #[serde(skip_serializing)]
     pubkey: PublicKey,
 }
 
