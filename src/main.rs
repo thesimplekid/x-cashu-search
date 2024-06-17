@@ -78,7 +78,13 @@ async fn main() {
 
     let localstore = WalletSQLiteDatabase::new("./wallet.sqlite").await.unwrap();
 
+    localstore.migrate().await;
+
     let wallet = Wallet::new(Arc::new(localstore), &seed, vec![]);
+
+    for mint in info.trusted_mints.clone() {
+        wallet.add_mint(mint).await.unwrap();
+    }
 
     let my_keys = Keys::generate();
     let client = Client::new(my_keys);
