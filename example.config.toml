@@ -1,0 +1,6 @@
+pubkey = ""
+trusted_mints = ["https://testnut.cashu.space"]
+sats_per_search = 50
+kagi_auth_token = ""
+relays = ["wss://relay.primal.net"]
+mnemonic = ""
