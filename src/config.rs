@@ -1,20 +1,14 @@
-use std::collections::HashSet;
-
-use cdk::url::UncheckedUrl;
-use cdk::Amount;
+use cdk::mint_url::MintUrl;
 use config::{Config, ConfigError, File};
-use nostr_sdk::Url;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Settings {
     pub pubkey: String,
     pub mnemonic: String,
-    pub trusted_mints: HashSet<UncheckedUrl>,
-    pub sats_per_search: Amount,
+    pub mint: MintUrl,
     pub kagi_auth_token: String,
     pub brave_auth_token: String,
-    pub relays: HashSet<Url>,
 }
 
 impl Settings {
@@ -42,6 +36,8 @@ impl Settings {
             Some(value) => value.clone(),
             None => default_config_file_name.to_string_lossy().to_string(),
         };
+
+        println!("{}", config);
         let builder = Config::builder();
         let config: Config = builder
             // use defaults
@@ -49,7 +45,9 @@ impl Settings {
             // override with file contents
             .add_source(File::with_name(&config))
             .build()?;
-        let settings: Settings = config.try_deserialize()?;
+        let settings: Settings = config.clone().try_deserialize().unwrap();
+
+        println!("{:?}", config);
 
         Ok(settings)
     }

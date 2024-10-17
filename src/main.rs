@@ -1,6 +1,7 @@
 //!
 
 use std::collections::HashSet;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -11,18 +12,19 @@ use axum::http::header::{
 use axum::http::{HeaderMap, HeaderName, StatusCode};
 use axum::routing::get;
 use axum::{Json, Router};
-use cdk::nuts::{Conditions, PublicKey as CashuPublicKey, SpendingConditions, Token};
-use cdk::url::UncheckedUrl;
+use cdk::mint_url::MintUrl;
+use cdk::nuts::{PublicKey as CashuPublicKey, SpendingConditions, Token, TokenV4};
 use cdk::util::unix_time;
 use cdk::wallet::Wallet;
-use cdk::{Amount, Mnemonic};
-use cdk_sqlite::WalletSQLiteDatabase;
-use nostr_sdk::{Client, Keys, PublicKey, Url};
+use cdk::Amount;
+use cdk_sqlite::WalletSqliteDatabase;
+use nostr_sdk::bip39::Mnemonic;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tracing::warn;
+use tracing_subscriber::EnvFilter;
 
 mod config;
 
@@ -41,10 +43,15 @@ fn app(state: ApiState) -> Router {
 }
 
 #[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .init();
+async fn main() -> anyhow::Result<()> {
+    let default_filter = "debug";
+
+    let sqlx_filter = "sqlx=warn";
+
+    let env_filter = EnvFilter::new(format!("{},{}", default_filter, sqlx_filter));
+
+    // Parse input
+    tracing_subscriber::fmt().with_env_filter(env_filter).init();
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
         .await
@@ -56,50 +63,56 @@ async fn main() {
 
     let settings = config::Settings::new(&Some(config_file_arg));
 
+    println!("{:?}", settings);
+
     let pubkey = CashuPublicKey::from_str(&settings.pubkey).unwrap();
-    let spending_conditions = SpendingConditions::new_p2pk(pubkey, Conditions::default());
+
+    let mint = settings.mint;
 
     let info = Info {
-        trusted_mints: settings.trusted_mints,
-        sats_per_search: settings.sats_per_search,
-        pubkey: PublicKey::from(pubkey.x_only_public_key()),
-        acceptable_p2pk_conditions: spending_conditions,
+        mint: mint.clone(),
+        sats_per_search: 50.into(),
+        pubkey,
     };
 
     let seed = Mnemonic::from_str(&settings.mnemonic)
         .unwrap()
         .to_seed_normalized("");
 
-    let settings = Settings {
-        relays: settings.relays.into_iter().collect(),
+    let api_settings = Settings {
         kagi_auth_token: settings.kagi_auth_token,
         brave_auth_token: settings.brave_auth_token,
+        mint_url: mint.clone(),
+        pubkey,
     };
 
-    let localstore = WalletSQLiteDatabase::new("./wallet.sqlite").await.unwrap();
+    let localstore = WalletSqliteDatabase::new(&PathBuf::from_str("./wallet.sqlite").unwrap())
+        .await
+        .unwrap();
 
     localstore.migrate().await;
 
-    let wallet = Wallet::new(Arc::new(localstore), &seed, vec![]);
+    let wallet = Wallet::new(
+        &mint.to_string(),
+        cdk::nuts::CurrencyUnit::Sat,
+        Arc::new(localstore),
+        &seed,
+        None,
+    )?;
 
-    for mint in info.trusted_mints.clone() {
-        wallet.add_mint(mint).await.unwrap();
-    }
+    let proofs = wallet.get_proofs().await?;
 
-    let my_keys = Keys::generate();
-    let client = Client::new(my_keys);
-
-    client.add_relays(settings.relays.clone()).await.unwrap();
-
-    client.connect().await;
+    let ys: HashSet<CashuPublicKey> = proofs.iter().flat_map(|p| p.y()).collect();
 
     let state = ApiState {
         info,
         wallet: Arc::new(Mutex::new(wallet)),
-        client,
-        settings,
+        settings: api_settings,
+        seen_ys: Arc::new(Mutex::new(ys)),
     };
-    axum::serve(listener, app(state)).await.unwrap();
+    axum::serve(listener, app(state)).await?;
+
+    Ok(())
 }
 
 async fn get_info(State(state): State<ApiState>) -> Result<Json<Info>, StatusCode> {
@@ -117,59 +130,59 @@ async fn get_search(
         .to_str()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let token = Token::from_str(x_cashu).unwrap();
+    let token: TokenV4 = TokenV4::from_str(x_cashu).unwrap();
 
-    let amount: Amount = token
-        .token
-        .iter()
-        .map(|m| m.proofs.iter().map(|p| p.amount).sum::<Amount>())
-        .sum();
+    let token_amount = token.value().unwrap();
 
-    if amount.lt(&state.info.sats_per_search) {
-        return Err(StatusCode::PAYMENT_REQUIRED);
-    }
+    let token_mint = token.mint_url.clone();
 
-    let token_mints: HashSet<&UncheckedUrl> = token.token.iter().map(|m| &m.mint).collect();
-
-    if !token_mints
-        .iter()
-        .all(|tm| state.info.trusted_mints.contains(tm))
-    {
+    if token_mint != state.settings.mint_url || token_amount != 1.into() {
         // All proofs must be from trusted mints
         return Err(StatusCode::PAYMENT_REQUIRED);
     }
+
+    let proof = token.proofs();
+    let proof = proof
+        .get(&state.settings.mint_url)
+        .unwrap()
+        .first()
+        .unwrap();
+
+    let mut seen_ys = state.seen_ys.lock().await;
 
     let time = unix_time();
 
     let wallet = state.wallet.lock().await;
 
+    let token = Token::TokenV4(token);
+
     wallet
-        .verify_token_p2pk(&token, state.info.acceptable_p2pk_conditions)
+        .verify_token_p2pk(
+            &token,
+            SpendingConditions::P2PKConditions {
+                data: state.settings.pubkey,
+                conditions: None,
+            },
+        )
         .map_err(|_| {
             warn!("P2PK verification failed");
             StatusCode::PAYMENT_REQUIRED
         })?;
 
-    wallet.verify_token_dleq(&token).await.map_err(|_| {
-        warn!("DLEQ verification failed");
-        StatusCode::PAYMENT_REQUIRED
-    })?;
+    // TODO: Cashu ts doesnt support DLEQ
+    // wallet.verify_token_dleq(&token).await.map_err(|_| {
+    //     warn!("DLEQ verification failed");
+    //     StatusCode::PAYMENT_REQUIRED
+    // })?;
+
+    if !seen_ys.insert(proof.y().unwrap()) {
+        tracing::warn!("Token already seen");
+        return Err(StatusCode::PAYMENT_REQUIRED);
+    }
 
     tracing::info!("Time to verify: {}", unix_time() - time);
 
     let time = unix_time();
-    let client = state.client;
-
-    tokio::spawn(async move {
-        client
-            .send_direct_msg(state.info.pubkey, token.to_string(), None)
-            .await
-            .map_err(|err| {
-                warn!("Could not send token: {}", err);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })
-            .unwrap();
-    });
 
     tracing::info!("Send: {}", unix_time() - time);
 
@@ -189,8 +202,6 @@ async fn get_search(
     let json_response = response
         .json::<Value>()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    tracing::info!("{}", json_response);
 
     let results: KagiSearchResponse =
         serde_json::from_value(json_response).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -224,27 +235,25 @@ struct Params {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Info {
-    trusted_mints: HashSet<UncheckedUrl>,
-    #[serde(flatten)]
-    acceptable_p2pk_conditions: SpendingConditions,
+    mint: MintUrl,
+    pubkey: CashuPublicKey,
     sats_per_search: Amount,
-    #[serde(skip_serializing)]
-    pubkey: PublicKey,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Settings {
-    relays: Vec<Url>,
     kagi_auth_token: String,
     brave_auth_token: String,
+    mint_url: MintUrl,
+    pubkey: CashuPublicKey,
 }
 
 #[derive(Clone)]
 struct ApiState {
     info: Info,
     wallet: Arc<Mutex<Wallet>>,
-    client: Client,
     settings: Settings,
+    seen_ys: Arc<Mutex<HashSet<CashuPublicKey>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

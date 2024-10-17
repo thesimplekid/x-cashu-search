@@ -6,12 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1"
 axum = { version = "0.7.5", features = ["macros"] }
-cdk = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet", "nostr"] }
+#cdk = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet"] }
 # cdk-redb = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet", "nostr"] }
-cdk-sqlite = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet", "nostr"] }
-#cdk-redb = { path = "../../cdk/nostr/crates/cdk-redb", features = ["nostr"] }
-#cdk = { path = "../../cdk/nostr/crates/cdk", default-features = false, features = ["wallet", "nostr"] }
+# cdk-sqlite = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet"] }
+cdk-sqlite = { path = "../../cdk/search/crates/cdk-sqlite", default-features = false, features = ["wallet"] }
+cdk = { path = "../../cdk/search/crates/cdk", default-features = false, features = ["wallet"] }
 minreq = { version = "2.11.1", features = ["json-using-serde", "https", "urlencoding"] }
 nostr-sdk = "0.29.0"
 serde = { version = "1.0.197", features = ["derive"] }
@@ -20,7 +21,7 @@ tokio = { version = "1.0", features = ["full"] }
 config = { version = "0.13.3", features = ["toml"] }
 dirs = "5.0.1"
 tracing = "0.1.37"
-tracing-subscriber = "0.3.17"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tower-http = { version = "0.5.2", features = ["cors"] }
 
 [profile]
