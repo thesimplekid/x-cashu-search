@@ -8,11 +8,10 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 axum = { version = "0.7.5", features = ["macros"] }
-#cdk = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet"] }
-# cdk-redb = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet", "nostr"] }
-# cdk-sqlite = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet"] }
-cdk-sqlite = { path = "../../cdk/search/crates/cdk-sqlite", default-features = false, features = ["wallet"] }
-cdk = { path = "../../cdk/search/crates/cdk", default-features = false, features = ["wallet"] }
+cdk = { git = "https://github.com/thesimplekid/cdk", branch = "search", default-features = false, features = ["wallet"] }
+cdk-sqlite = { git = "https://github.com/thesimplekid/cdk", branch = "search", default-features = false, features = ["wallet"] }
+# cdk-sqlite = { path = "../../cdk/search/crates/cdk-sqlite", default-features = false, features = ["wallet"] }
+# cdk = { path = "../../cdk/search/crates/cdk", default-features = false, features = ["wallet"] }
 minreq = { version = "2.11.1", features = ["json-using-serde", "https", "urlencoding"] }
 nostr-sdk = "0.29.0"
 serde = { version = "1.0.197", features = ["derive"] }

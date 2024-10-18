@@ -539,6 +539,7 @@ dependencies = [
 [[package]]
 name = "cdk"
 version = "0.4.0"
+source = "git+https://github.com/thesimplekid/cdk?branch=search#4d36f3248ad0312417d4f2db326b7cde6730dbb7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -566,6 +567,7 @@ dependencies = [
 [[package]]
 name = "cdk-sqlite"
 version = "0.4.0"
+source = "git+https://github.com/thesimplekid/cdk?branch=search#4d36f3248ad0312417d4f2db326b7cde6730dbb7"
 dependencies = [
  "async-trait",
  "bitcoin 0.32.3",
