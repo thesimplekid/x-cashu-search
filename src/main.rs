@@ -23,7 +23,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
-use tracing::warn;
 use tracing_subscriber::EnvFilter;
 
 mod config;
@@ -53,19 +52,17 @@ async fn main() -> anyhow::Result<()> {
     // Parse input
     tracing_subscriber::fmt().with_env_filter(env_filter).init();
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
-        .await
-        .unwrap();
-    println!("listening on {}", listener.local_addr().unwrap());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await?;
+    tracing::info!("listening on {}", listener.local_addr()?);
 
     // get config file name from args
     let config_file_arg = "./config.toml".to_string();
 
     let settings = config::Settings::new(&Some(config_file_arg));
 
-    println!("{:?}", settings);
+    tracing::debug!("{:?}", settings);
 
-    let pubkey = CashuPublicKey::from_str(&settings.pubkey).unwrap();
+    let pubkey = CashuPublicKey::from_str(&settings.pubkey)?;
 
     let mint = settings.mint;
 
@@ -75,9 +72,7 @@ async fn main() -> anyhow::Result<()> {
         pubkey,
     };
 
-    let seed = Mnemonic::from_str(&settings.mnemonic)
-        .unwrap()
-        .to_seed_normalized("");
+    let seed = Mnemonic::from_str(&settings.mnemonic)?.to_seed_normalized("");
 
     let api_settings = Settings {
         kagi_auth_token: settings.kagi_auth_token,
@@ -86,9 +81,8 @@ async fn main() -> anyhow::Result<()> {
         pubkey,
     };
 
-    let localstore = WalletSqliteDatabase::new(&PathBuf::from_str("./wallet.sqlite").unwrap())
-        .await
-        .unwrap();
+    let localstore =
+        WalletSqliteDatabase::new(&PathBuf::from_str("./wallet.sqlite").unwrap()).await?;
 
     localstore.migrate().await;
 
@@ -110,6 +104,8 @@ async fn main() -> anyhow::Result<()> {
         settings: api_settings,
         seen_ys: Arc::new(Mutex::new(ys)),
     };
+
+    tracing::info!("Starting axum server");
     axum::serve(listener, app(state)).await?;
 
     Ok(())
@@ -165,7 +161,7 @@ async fn get_search(
             },
         )
         .map_err(|_| {
-            warn!("P2PK verification failed");
+            tracing::warn!("P2PK verification failed");
             StatusCode::PAYMENT_REQUIRED
         })?;
 
@@ -175,7 +171,16 @@ async fn get_search(
     //     StatusCode::PAYMENT_REQUIRED
     // })?;
 
-    if !seen_ys.insert(proof.y().unwrap()) {
+    let proof_y = proof.y().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let proof_keys = proof.keyset_id;
+
+    let _wallet_keys = wallet.get_keyset_keys(proof_keys).await.map_err(|err| {
+        tracing::error!("Could not get wallet keys: {}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    if !seen_ys.insert(proof_y) {
         tracing::warn!("Token already seen");
         return Err(StatusCode::PAYMENT_REQUIRED);
     }
@@ -192,10 +197,13 @@ async fn get_search(
             "Authorization",
             format!("Bot {}", state.settings.kagi_auth_token),
         )
-        // TODO: Check q is still URL encoded
         .with_param("q", q.q.clone())
         .send()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|err| {
+            tracing::error!("Failed to make kagi request: {}", err);
+            seen_ys.remove(&proof_y);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     tracing::info!("Kagi time: {}", unix_time() - time);
     let time = unix_time();
@@ -203,8 +211,11 @@ async fn get_search(
         .json::<Value>()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let results: KagiSearchResponse =
-        serde_json::from_value(json_response).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let results: KagiSearchResponse = serde_json::from_value(json_response).map_err(|_| {
+        tracing::error!("Invalid response from kagi");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
     tracing::info!(
         "fetched response: {} from {}",
         results.meta.ms,
@@ -219,6 +230,7 @@ async fn get_search(
             KagiSearchObject::RelatedSearches(_) => None,
         })
         .collect();
+
     let results: Vec<SearchResult> = search_results
         .into_iter()
         .flat_map(|r| r.try_into())
