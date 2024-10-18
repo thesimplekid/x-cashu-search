@@ -96,8 +96,9 @@ async fn main() -> anyhow::Result<()> {
         pubkey,
     };
 
-    let localstore =
-        WalletSqliteDatabase::new(&PathBuf::from_str("./wallet.sqlite").unwrap()).await?;
+    let db_path = work_dir.join("wallet.sqlite");
+
+    let localstore = WalletSqliteDatabase::new(&db_path).await?;
 
     localstore.migrate().await;
 
