@@ -191,6 +191,18 @@ async fn get_search(
 
     tracing::info!("Send: {}", unix_time() - time);
 
+    // let wallet_clone = wallet.clone();
+
+    // TODO: Swap tokens
+    // tokio::spawn(async move {
+    //     if let Err(err) = wallet_clone
+    //         .receive(&token.to_string(), SplitTarget::default(), &[], &[])
+    //         .await
+    //     {
+    //         tracing::error!("Could not swap token: {}", err);
+    //     }
+    // });
+
     let time = unix_time();
     let response = minreq::get("https://kagi.com/api/v0/search")
         .with_header(
