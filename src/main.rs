@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use axum::extract::{Query, State};
 use axum::http::header::{
     ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_ORIGIN, AUTHORIZATION, CONTENT_TYPE,
@@ -18,6 +19,7 @@ use cdk::util::unix_time;
 use cdk::wallet::Wallet;
 use cdk::Amount;
 use cdk_sqlite::WalletSqliteDatabase;
+use clap::Parser;
 use nostr_sdk::bip39::Mnemonic;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -25,6 +27,9 @@ use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::EnvFilter;
 
+use crate::cli::CLIArgs;
+
+mod cli;
 mod config;
 
 fn app(state: ApiState) -> Router {
@@ -55,10 +60,20 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await?;
     tracing::info!("listening on {}", listener.local_addr()?);
 
-    // get config file name from args
-    let config_file_arg = "./config.toml".to_string();
+    let args = CLIArgs::parse();
 
-    let settings = config::Settings::new(&Some(config_file_arg));
+    let work_dir = match args.work_dir {
+        Some(w) => w,
+        None => work_dir()?,
+    };
+
+    // get config file name from args
+    let config_file_arg = match args.config {
+        Some(c) => c,
+        None => work_dir.join("config.toml"),
+    };
+
+    let settings = config::Settings::new(&Some(config_file_arg.to_string_lossy().to_string()));
 
     tracing::debug!("{:?}", settings);
 
@@ -370,3 +385,8 @@ impl From<BraveSearchResult> for SearchResult {
     }
 }
 */
+fn work_dir() -> anyhow::Result<PathBuf> {
+    let home_dir = home::home_dir().ok_or(anyhow!("Unknown home dir"))?;
+
+    Ok(home_dir.join(".x-cashu-backend"))
+}
