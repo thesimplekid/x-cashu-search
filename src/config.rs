@@ -1,14 +1,32 @@
+use std::str::FromStr;
+
 use cdk::mint_url::MintUrl;
 use config::{Config, ConfigError, File};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
-    pub pubkey: String,
+    pub cashu_private_key: String,
     pub mnemonic: String,
     pub mint: MintUrl,
     pub kagi_auth_token: String,
     pub brave_auth_token: String,
+    pub nostr_notification: String,
+    pub nostr_relays: Vec<String>,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Settings {
+            cashu_private_key: String::new(),
+            mnemonic: String::new(),
+            mint: MintUrl::from_str("").unwrap(),
+            kagi_auth_token: String::new(),
+            brave_auth_token: String::new(),
+            nostr_notification: String::new(),
+            nostr_relays: Vec::new(),
+        }
+    }
 }
 
 impl Settings {

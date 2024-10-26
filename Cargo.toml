@@ -8,12 +8,10 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 axum = { version = "0.7.5", features = ["macros"] }
-cdk = { git = "https://github.com/thesimplekid/cdk", branch = "search", default-features = false, features = ["wallet"] }
-cdk-sqlite = { git = "https://github.com/thesimplekid/cdk", branch = "search", default-features = false, features = ["wallet"] }
-# cdk-sqlite = { path = "../../cdk/search/crates/cdk-sqlite", default-features = false, features = ["wallet"] }
-# cdk = { path = "../../cdk/search/crates/cdk", default-features = false, features = ["wallet"] }
+cdk = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet"] }
+cdk-redb = { git = "https://github.com/thesimplekid/cdk", branch = "main", default-features = false, features = ["wallet"] }
 minreq = { version = "2.11.1", features = ["json-using-serde", "https", "urlencoding"] }
-nostr-sdk = "0.29.0"
+nostr-sdk = { version = "0.35.0", features = ["nip59"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"
 tokio = { version = "1.0", features = ["full"] }
@@ -24,6 +22,7 @@ tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tower-http = { version = "0.5.2", features = ["cors"] }
 clap = { version = "4.5.20", features = ["derive"] }
 home = "0.5.9"
+redb = "2.1.4"
 
 [profile]
 
