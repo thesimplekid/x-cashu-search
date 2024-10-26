@@ -24,6 +24,7 @@ use clap::Parser;
 use db::Db;
 use nostr_sdk::bip39::Mnemonic;
 use nostr_sdk::{Client, Keys, PublicKey};
+use reqwest::Client as ReqwestClient;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::{Mutex, RwLock};
@@ -120,6 +121,7 @@ async fn main() -> anyhow::Result<()> {
         settings: api_settings,
         db: Arc::new(db),
         unclaimed_proofs: Arc::new(RwLock::new(Vec::new())),
+        reqwest_client: ReqwestClient::new(),
     };
 
     tracing::info!("Starting axum server");
@@ -272,13 +274,16 @@ async fn get_search(
     }
 
     let time = unix_time();
-    let response = minreq::get("https://kagi.com/api/v0/search")
-        .with_header(
-            "Authorization",
+    let response = state
+        .reqwest_client
+        .get("https://kagi.com/api/v0/search")
+        .header(
+            AUTHORIZATION,
             format!("Bot {}", state.settings.kagi_auth_token),
         )
-        .with_param("q", q.q.clone())
+        .query(&[("q", q.q.clone())])
         .send()
+        .await
         .map_err(|err| {
             tracing::error!("Failed to make kagi request: {}", err);
             state.db.remove_proof(proof).ok();
@@ -289,6 +294,7 @@ async fn get_search(
     let time = unix_time();
     let json_response = response
         .json::<Value>()
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let results: KagiSearchResponse = serde_json::from_value(json_response).map_err(|_| {
@@ -348,6 +354,7 @@ struct ApiState {
     settings: Settings,
     db: Arc<Db>,
     unclaimed_proofs: Arc<RwLock<Proofs>>,
+    reqwest_client: ReqwestClient,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
