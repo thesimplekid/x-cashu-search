@@ -531,7 +531,7 @@ dependencies = [
 [[package]]
 name = "cdk"
 version = "0.4.0"
-source = "git+https://github.com/thesimplekid/cdk?branch=main#58e7226cff3834fc19c4f5518c458ab322a370d1"
+source = "git+https://github.com/thesimplekid/cdk?rev=169c1a562#169c1a562cb890044aa8d74ccb1b40b733e05003"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -559,7 +559,7 @@ dependencies = [
 [[package]]
 name = "cdk-redb"
 version = "0.4.0"
-source = "git+https://github.com/thesimplekid/cdk?branch=main#58e7226cff3834fc19c4f5518c458ab322a370d1"
+source = "git+https://github.com/thesimplekid/cdk?rev=169c1a562#169c1a562cb890044aa8d74ccb1b40b733e05003"
 dependencies = [
  "async-trait",
  "cdk",
