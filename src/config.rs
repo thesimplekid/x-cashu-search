@@ -24,7 +24,7 @@ impl Default for Settings {
             listen_port: 8080,
             cashu_private_key: String::new(),
             mnemonic: String::new(),
-            mint: MintUrl::from_str("").unwrap(),
+            mint: MintUrl::from_str("https:://fake.thesimplekid.dev").unwrap(),
             kagi_auth_token: String::new(),
             brave_auth_token: String::new(),
             nostr_notification: String::new(),
