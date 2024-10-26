@@ -1,6 +1,9 @@
 pubkey = ""
-trusted_mints = ["https://testnut.cashu.space"]
-sats_per_search = 50
+mint = "https://testnut.cashu.space"
 kagi_auth_token = ""
 relays = ["wss://relay.primal.net"]
 mnemonic = ""
+kagi_auth_token=""
+cashu_private_key=""
+nostr_notification="npub..."
+nostr_relays=["wss://relay.damus.io, wss://nostr.oxtr.dev", "wss://auth.nostr1.com"]

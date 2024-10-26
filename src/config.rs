@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
+    pub listen_addr: String,
+    pub listen_port: u16,
     pub cashu_private_key: String,
     pub mnemonic: String,
     pub mint: MintUrl,
@@ -18,6 +20,8 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Settings {
+            listen_addr: "127.0.0.1".to_string(),
+            listen_port: 8080,
             cashu_private_key: String::new(),
             mnemonic: String::new(),
             mint: MintUrl::from_str("").unwrap(),

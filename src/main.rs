@@ -61,9 +61,6 @@ async fn main() -> anyhow::Result<()> {
     // Parse input
     tracing_subscriber::fmt().with_env_filter(env_filter).init();
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await?;
-    tracing::info!("listening on {}", listener.local_addr()?);
-
     let args = CLIArgs::parse();
 
     let work_dir = match args.work_dir {
@@ -126,6 +123,9 @@ async fn main() -> anyhow::Result<()> {
     };
 
     tracing::info!("Starting axum server");
+    let bind_addr = format!("{}:{}", settings.listen_addr, settings.listen_port);
+    let listener = tokio::net::TcpListener::bind(bind_addr).await?;
+    tracing::info!("listening on {}", listener.local_addr()?);
     axum::serve(listener, app(state)).await?;
 
     Ok(())
