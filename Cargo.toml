@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 axum = { version = "0.7.5", features = ["macros"] }
-cdk = { git = "https://github.com/thesimplekid/cdk", rev = "169c1a562", default-features = false, features = ["wallet"] }
-cdk-redb = { git = "https://github.com/thesimplekid/cdk", rev = "169c1a562", default-features = false, features = ["wallet"] }
+cdk = { git = "https://github.com/thesimplekid/cdk", rev = "557208c", default-features = false, features = ["wallet"] }
+cdk-redb = { git = "https://github.com/thesimplekid/cdk", rev = "557208c", default-features = false, features = ["wallet"] }
 nostr-sdk = { version = "0.35.0", features = ["nip59"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"
