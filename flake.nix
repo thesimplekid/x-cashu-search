@@ -19,7 +19,7 @@
       in
       {
         devShells = flakeboxLib.mkShells {
-          packages = [ ];
+          packages = [ nixpkgs.pkg-config ];
         };
       });
 }
